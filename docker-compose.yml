@@ -1,0 +1,89 @@
+version: '3.9'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    restart: unless-stopped
+    ports:
+      - 1883:1883
+      - 8883:8883
+      - 9001:9001
+    volumes:
+      - /mnt/disk3/docker/appdata/mosquitto/config:/mosquitto/config
+      - /mnt/disk3/docker/appdata/mosquitto/data:/mosquitto/data
+      - /mnt/disk3/docker/appdata/mosquitto/logs:/mosquitto/logs
+  homeassistant:
+    image: homeassistant/home-assistant:2022.6
+    volumes:
+      - /mnt/disk3/docker/appdata/home-assistant:/config
+      - /etc/localtime:/etc/localtime:ro
+    depends_on:
+      - mosquitto
+      - influxdb
+    restart: unless-stopped
+    ports:
+      - 1932:1932
+    network_mode: host
+
+  frigate:
+    #privileged: true
+    restart: unless-stopped
+    image: blakeblackshear/frigate:0.8.4-amd64
+#    devices:
+#      - /dev/bus/usb:/dev/bus/usb
+#      - /dev/dri/card0
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/disk3/docker/appdata/home-assistant/frigate.yaml:/config/config.yml:ro
+      - /mnt/user/frigate:/media/frigate
+      - type: tmpfs
+        target: /tmp/cache
+    ports:
+      - "1935:1935"
+      - "5000:5000"
+    network_mode: host
+#    env_file:
+#      - frigate.env
+
+#  influxdb:
+#    image: influxdb:1.8
+#    ports:
+#      - 8086:8086
+#    volumes:
+#      - /mnt/disk3/docker/appdata/influxdb/data:/var/lib/influxdb2
+#      - /mnt/disk3/docker/appdata/influxdb/conf:/etc/influxdb2
+#    restart: unless-stopped
+
+#  nodered:
+#    image: nodered/node-red:latest
+#    ports:
+#      - 1880:1880
+#    volumes:
+#      - /mnt/disk3/docker/appdata/node-red:/data
+#      - /etc/localtime:/etc/localtime:ro
+#    depends_on:
+#      - mosquitto
+#      - homeassistant
+#    restart: unless-stopped
+
+#  appdaemon:
+#    image: acockburn/appdaemon:4.0.3
+#    ports:
+#      - 5000:5000
+#    volumes:
+#      - /mnt/disk3/docker/appdata/appdaemon:/conf
+#      - /etc/localtime:/etc/localtime:ro
+#    depends_on:
+#      - homeassistant
+#    restart: unless-stopped
+
+#  zigbee2mqtt:
+#    image: koenkk/zigbee2mqtt
+#    volumes:
+#      - /mnt/disk3/docker/appdata/zigbee2mqtt:/app/data
+#    devices:
+#      - /dev/ttyACM0:/dev/ttyACM0
+#    depends_on:
+#      - mosquitto
+#    restart: unless-stopped
+#    network_mode: host
